@@ -18,7 +18,7 @@ argon_check_pkg() {
     fi
 }
 
-pkglist=(raspi-gpio python-rpi.gpio python3-rpi.gpio python-smbus python3-smbus i2c-tools)
+pkglist=(python-rpi.gpio python3-rpi.gpio python3-smbus i2c-tools)
 for curpkg in ${pkglist[@]}; do
 	sudo apt-get install -y $curpkg
 	RESULT=$(argon_check_pkg "$curpkg")
@@ -42,9 +42,6 @@ removescript=/usr/bin/argonone-uninstall
 
 daemonfanservice=/lib/systemd/system/$daemonname.service
 
-sudo raspi-config nonint do_i2c 0
-sudo raspi-config nonint do_serial 0	
-	
 if [ ! -f $daemonconfigfile ]; then
 	# Generate config file for fan speed
 	sudo touch $daemonconfigfile
@@ -183,9 +180,9 @@ echo '		fanconfig = tmpconfig' >> $powerbuttonscript
 echo '	address=0x1a' >> $powerbuttonscript
 echo '	prevblock=0' >> $powerbuttonscript
 echo '	while True:' >> $powerbuttonscript
-echo '		temp = os.popen("vcgencmd measure_temp").readline()' >> $powerbuttonscript
-echo '		temp = temp.replace("temp=","")' >> $powerbuttonscript
-echo '		val = float(temp.replace("'"'"'C",""))' >> $powerbuttonscript
+echo "		with open(\"/sys/class/thermal/thermal_zone0/temp\", 'r') as f:" >> $powerbuttonscript
+echo '			temp = f.readline()' >> $powerbuttonscript
+echo '		val = int(temp.strip()[:2])' >> $powerbuttonscript
 echo '		block = get_fanspeed(val, fanconfig)' >> $powerbuttonscript
 echo '		if block < prevblock:' >> $powerbuttonscript
 echo '			time.sleep(30)' >> $powerbuttonscript
@@ -244,9 +241,9 @@ echo 'then' >> $removescript
 echo '	echo "Cancelled"' >> $removescript
 echo '	exit' >> $removescript
 echo 'fi' >> $removescript
-echo 'if [ -d "/home/pi/Desktop" ]; then' >> $removescript
-echo '	sudo rm "/home/pi/Desktop/argonone-config.desktop"' >> $removescript
-echo '	sudo rm "/home/pi/Desktop/argonone-uninstall.desktop"' >> $removescript
+echo "if [ -d \"/home/$USER/Desktop\" ]; then" >> $removescript
+echo "	sudo rm \"/home/$USER/Desktop/argonone-config.desktop\"" >> $removescript
+echo "	sudo rm \"/home/$USER/Desktop/argonone-uninstall.desktop\"" >> $removescript
 echo 'fi' >> $removescript
 echo 'if [ -f '$powerbuttonscript' ]; then' >> $removescript
 echo '	sudo systemctl stop '$daemonname'.service' >> $removescript
@@ -450,24 +447,24 @@ if [ -d "/home/pi/Desktop" ]; then
 	sudo wget http://download.argon40.com/ar1config.png -O /usr/share/pixmaps/ar1config.png
 	sudo wget http://download.argon40.com/ar1uninstall.png -O /usr/share/pixmaps/ar1uninstall.png
 	# Create Shortcuts
-	shortcutfile="/home/pi/Desktop/argonone-config.desktop"
+	shortcutfile="/home/$USER/Desktop/argonone-config.desktop"
 	echo "[Desktop Entry]" > $shortcutfile
 	echo "Name=Argon One Configuration" >> $shortcutfile
 	echo "Comment=Argon One Configuration" >> $shortcutfile
 	echo "Icon=/usr/share/pixmaps/ar1config.png" >> $shortcutfile
-	echo 'Exec=lxterminal -t "Argon One Configuration" --working-directory=/home/pi/ -e '$configscript >> $shortcutfile
+	echo "Exec=lxterminal -t \"Argon One Configuration\" --working-directory=/home/$USER/ -e "$configscript >> $shortcutfile
 	echo "Type=Application" >> $shortcutfile
 	echo "Encoding=UTF-8" >> $shortcutfile
 	echo "Terminal=false" >> $shortcutfile
 	echo "Categories=None;" >> $shortcutfile
 	chmod 755 $shortcutfile
 	
-	shortcutfile="/home/pi/Desktop/argonone-uninstall.desktop"
+	shortcutfile="/home/$USER/Desktop/argonone-uninstall.desktop"
 	echo "[Desktop Entry]" > $shortcutfile
 	echo "Name=Argon One Uninstall" >> $shortcutfile
 	echo "Comment=Argon One Uninstall" >> $shortcutfile
 	echo "Icon=/usr/share/pixmaps/ar1uninstall.png" >> $shortcutfile
-	echo 'Exec=lxterminal -t "Argon One Uninstall" --working-directory=/home/pi/ -e '$removescript >> $shortcutfile
+	echo "Exec=lxterminal -t \"Argon One Uninstall\" --working-directory=/home/$USER/ -e "$removescript >> $shortcutfile
 	echo "Type=Application" >> $shortcutfile
 	echo "Encoding=UTF-8" >> $shortcutfile
 	echo "Terminal=false" >> $shortcutfile
@@ -480,7 +477,7 @@ echo "***************************"
 echo "Argon One Setup Completed."
 echo "***************************"
 echo 
-if [ -d "/home/pi/Desktop" ]; then
+if [ -d "/home/$USER/Desktop" ]; then
 	echo Shortcuts created in your desktop.
 else
 	echo Use 'argonone-config' to configure fan
