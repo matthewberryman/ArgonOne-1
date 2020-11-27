@@ -18,7 +18,7 @@ argon_check_pkg() {
     fi
 }
 
-pkglist=(python-rpi.gpio python3-rpi.gpio python3-smbus i2c-tools)
+pkglist=(python3-rpi.gpio python3-smbus i2c-tools)
 for curpkg in ${pkglist[@]}; do
 	sudo apt-get install -y $curpkg
 	RESULT=$(argon_check_pkg "$curpkg")
